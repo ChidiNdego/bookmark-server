@@ -44,6 +44,8 @@
 import http.server
 import requests
 import os
+import threading
+from socketserver import ThreadingMixIn
 from urllib.parse import unquote, parse_qs
 
 memory = {}
@@ -77,14 +79,17 @@ def CheckURI(uri, timeout=5):
     '''
     # 1. Write this function.  Delete the following line.
     #raise NotImplementedError("Step 1 isn't written yet.")
-    if requests.get(uri).status_code == 200:
+    if requests.get(uri,timeout=timeout).status_code == 200:
         return True
-    elif requests.get(uri).status_code != 200:
+    elif requests.get(uri,timeout=timeout).status_code != 200:
         return False
     else:
         return 'Time Out...'
 
 
+class ThreadHTTPServer(ThreadingMixIn, http.server.HTTPServer):
+    "This is an HTTPServer that supports thread-based concurrency."
+    
 class Shortener(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         # A GET request will either be for / (the root path) or for /some-name.
@@ -158,5 +163,6 @@ class Shortener(http.server.BaseHTTPRequestHandler):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))   # Use PORT if it's there.
     server_address = ('', port)
-    httpd = http.server.HTTPServer(server_address, Shortener)
+    # httpd = http.server.HTTPServer(server_address, Shortener)
+    httpd = ThreadHTTPServer(server_address, Shortener)
     httpd.serve_forever()
